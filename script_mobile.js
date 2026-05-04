@@ -243,12 +243,18 @@ function openBook(book) {
     flipSound.play().catch(() => {});
 
     setTimeout(() => {
+        // 連続スクロール対応: 右端（文頭）へ
+        // 縦書き(vertical-rl)ではブラウザにより挙動が異なるため、確実な方法をとる
         bookViewport.scrollLeft = 0; 
-        if (bookViewport.scrollLeft === 0 && bookViewport.scrollWidth > bookViewport.clientWidth) {
-             bookViewport.scrollLeft = bookViewport.scrollWidth;
+        const maxScroll = bookViewport.scrollWidth - bookViewport.clientWidth;
+        // scrollLeft が負、または 0 が右端の場合などがあるため、絶対値の最大方向に振る
+        bookViewport.scrollLeft = bookViewport.scrollLeft <= 0 ? 0 : maxScroll;
+        // それでも右端でない場合は強制的に最大値
+        if (bookViewport.scrollLeft === 0 && maxScroll > 0) {
+            bookViewport.scrollLeft = maxScroll;
         }
         updatePaginationUI();
-    }, 150);
+    }, 200);
 }
 
 function updatePaginationUI() {
@@ -256,12 +262,15 @@ function updatePaginationUI() {
     const cw = bookViewport.clientWidth;
     const sl = Math.abs(bookViewport.scrollLeft);
     
+    // スクロール位置に応じたボタンの有効・無効化のみ
+    // 縦書きでは左端が文末
+    nextPageBtn.disabled = sl >= (sw - cw - 10); 
+    prevPageBtn.disabled = sl <= 10;
+    
+    // ページ情報（目安として表示し続ける）
     currentPage = Math.floor(sl / (cw + 10));
     totalPages = Math.max(1, Math.ceil(sw / cw));
-
     pageInfo.textContent = `${currentPage + 1} / ${totalPages}`;
-    nextPageBtn.disabled = sl >= (sw - cw - 10);
-    prevPageBtn.disabled = sl <= 10;
 }
 
 function flipPage(dir) {

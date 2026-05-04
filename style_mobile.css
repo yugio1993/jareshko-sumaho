@@ -363,8 +363,10 @@ header {
 }
 .reader-content {
     height: 100%;
-    font-size: 1.1rem;
-    padding-right: 20px; /* 余白 */
+    font-size: 1.2rem;
+    padding-right: 40px; /* 文頭の余白 */
+    padding-left: 40px;  /* 文末の余白 */
+    width: max-content;  /* 内容に合わせて横に伸びる */
 }
 
 .vertical-text {
