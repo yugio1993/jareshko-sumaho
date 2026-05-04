@@ -6,6 +6,14 @@ let isGothic = false;
 let currentBgmVolume = 0.12;
 
 // ==============================
+// BGMリスト
+// ==============================
+const dayBgmList = ['bgm_day/spring_mountain.mp3'];
+const nightBgmList = ['bgm_night/gentle_snow.mp3'];
+let bgmPlaylist = [];
+let bgmIndex = 0;
+
+// ==============================
 // Firebase 設定
 // ==============================
 const firebaseConfig = {
@@ -16,6 +24,48 @@ const firebaseConfig = {
   messagingSenderId: "839348164263",
   appId: "1:839348164263:web:520351a7d8a18667422d82"
 };
+
+// BGM再生用関数
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function stopBgm() {
+    if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio.onended = null;
+        bgmAudio = null;
+    }
+}
+
+function playNextBgm() {
+    if (bgmPlaylist.length === 0) return;
+    bgmIndex = (bgmIndex + 1) % bgmPlaylist.length;
+    loadAndPlayBgm(bgmPlaylist[bgmIndex]);
+}
+
+function loadAndPlayBgm(src) {
+    stopBgm();
+    const audio = new Audio(src);
+    audio.volume = currentBgmVolume;
+    audio.onended = playNextBgm;
+    audio.play().catch(e => console.log('BGM play blocked:', e));
+    bgmAudio = audio;
+}
+
+function playCurrentBgm() {
+    const isDark = document.body.classList.contains('dark-theme');
+    const list = isDark ? nightBgmList : dayBgmList;
+    if (list.length === 0) return;
+    bgmPlaylist = shuffle(list);
+    bgmIndex = 0;
+    loadAndPlayBgm(bgmPlaylist[0]);
+}
 
 // Firebase初期化
 firebase.initializeApp(firebaseConfig);
@@ -133,13 +183,11 @@ function renderBookshelf() {
     while (currentBookIndex < displayBooks.length || currentBookIndex === 0) {
         const row = document.createElement('div');
         row.className = 'bookshelf-row';
-        
-        // モバイルでは1段あたりの冊数を少なめに (5〜7冊)
-        const booksInThisRow = Math.floor(Math.random() * 3) + 5; 
+        // モバイルでは1段あたりの冊数を少なめに (3〜5冊)
+        const booksInThisRow = Math.floor(Math.random() * 3) + 3; 
         const rowBooks = displayBooks.slice(currentBookIndex, currentBookIndex + booksInThisRow);
         
         rowBooks.forEach(book => row.appendChild(createBookSpine(book)));
-
         bookshelfWrapper.appendChild(row);
         currentBookIndex += booksInThisRow;
         if (currentBookIndex >= displayBooks.length && displayBooks.length > 0) break;
@@ -162,7 +210,7 @@ function createBookSpine(book) {
     const spine = document.createElement('div');
     spine.className = `book-spine pattern-${book.pattern || 'antique'}`;
     spine.style.backgroundColor = book.color;
-    spine.style.height = `${130 + (book.id % 30)}px`; // モバイル向けに少し低く
+    spine.style.height = `${180 + (book.id % 40)}px`;
 
     const title = document.createElement('div');
     title.className = 'spine-text';
@@ -194,37 +242,41 @@ function openBook(book) {
     flipSound.currentTime = 0;
     flipSound.play().catch(() => {});
 
-    setTimeout(() => calculatePagination(book.lastPage || 0), 100);
-}
-
-function calculatePagination(jumpToPage = 0) {
-    const vw = bookViewport.clientWidth;
-    const pageAdvance = vw + 30; // 余白分
-    
-    requestAnimationFrame(() => {
-        const sw = readContent.scrollWidth;
-        totalPages = Math.max(1, Math.ceil(sw / pageAdvance));
-        currentPage = Math.min(jumpToPage, totalPages - 1);
+    setTimeout(() => {
+        bookViewport.scrollLeft = 0; 
+        if (bookViewport.scrollLeft === 0 && bookViewport.scrollWidth > bookViewport.clientWidth) {
+             bookViewport.scrollLeft = bookViewport.scrollWidth;
+        }
         updatePaginationUI();
-    });
+    }, 150);
 }
 
 function updatePaginationUI() {
-    const vw = bookViewport.clientWidth;
-    const pageAdvance = vw + 30;
-    readContent.style.transform = `translateX(${currentPage * pageAdvance}px)`;
+    const sw = bookViewport.scrollWidth;
+    const cw = bookViewport.clientWidth;
+    const sl = Math.abs(bookViewport.scrollLeft);
+    
+    currentPage = Math.floor(sl / (cw + 10));
+    totalPages = Math.max(1, Math.ceil(sw / cw));
+
     pageInfo.textContent = `${currentPage + 1} / ${totalPages}`;
-    nextPageBtn.disabled = currentPage >= totalPages - 1;
-    prevPageBtn.disabled = currentPage === 0;
+    nextPageBtn.disabled = sl >= (sw - cw - 10);
+    prevPageBtn.disabled = sl <= 10;
 }
 
 function flipPage(dir) {
-    if (dir === 'next' && currentPage < totalPages - 1) currentPage++;
-    else if (dir === 'prev' && currentPage > 0) currentPage--;
-    else return;
+    const cw = bookViewport.clientWidth;
+    const scrollAmount = cw * 0.9;
+    
+    if (dir === 'next') {
+        bookViewport.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+        bookViewport.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+    
     flipSound.currentTime = 0;
     flipSound.play().catch(() => {});
-    updatePaginationUI();
+    setTimeout(updatePaginationUI, 500);
 }
 
 function renderTabs() {
@@ -255,6 +307,7 @@ function setupEventListeners() {
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         mainContent.classList.remove('hidden');
+        playCurrentBgm();
     });
 
     mobileMenuBtn.addEventListener('click', () => mobileActions.classList.toggle('hidden'));
@@ -301,10 +354,12 @@ function setupEventListeners() {
     nextPageBtn.addEventListener('click', () => flipPage('next'));
     prevPageBtn.addEventListener('click', () => flipPage('prev'));
 
+    bookViewport.addEventListener('scroll', updatePaginationUI);
+
     fontFamilyBtn.addEventListener('click', () => {
         isGothic = !isGothic;
         readContent.classList.toggle('font-gothic', isGothic);
-        setTimeout(() => calculatePagination(currentPage), 100);
+        setTimeout(() => updatePaginationUI(), 100);
     });
 
     fontSizeUpBtn.addEventListener('click', () => { if (currentFontSize < 2.0) { currentFontSize += 0.1; updateFontSize(); } });
@@ -318,13 +373,12 @@ function setupEventListeners() {
         openBook(book);
     });
 
-    // その他基本的なイベント (簡略化)
     window.addEventListener('click', () => contextMenu.classList.add('hidden'));
 }
 
 function updateFontSize() {
     readContent.style.fontSize = `${currentFontSize}rem`;
-    calculatePagination(currentPage);
+    updatePaginationUI();
 }
 
 function showToast(message) {
