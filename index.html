@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>森のじゃれ書庫 (モバイル版)</title>
+    <link rel="stylesheet" href="style_mobile.css">
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&family=Kiwi+Maru:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="overlay">
+        <div class="start-content">
+            <h1>森のじゃれ書庫</h1>
+            <p>静かな森の中、あなただけの書棚へ。</p>
+            <button id="start-btn" class="btn">書庫へ入る</button>
+        </div>
+    </div>
+
+    <!-- Drag Overlay (Hidden for mobile by default, but kept for consistency) -->
+    <div id="drag-overlay" class="overlay hidden">
+        <div class="start-content">
+            <i class="fas fa-file-import" style="font-size: 3rem; margin-bottom: 20px;"></i>
+            <h2>本をドロップしてインポート</h2>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container"></div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+        <header>
+            <div class="header-top">
+                <h1 class="site-title">森のじゃれ書庫</h1>
+                <div class="header-tools">
+                    <button id="mobile-menu-btn" class="btn-icon"><i class="fas fa-bars"></i></button>
+                </div>
+            </div>
+            
+            <div id="search-bar-mobile" class="search-box-mobile">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="物語を検索...">
+            </div>
+
+            <div id="mobile-actions" class="mobile-actions-panel hidden">
+                <div class="action-row">
+                    <select id="sort-select" class="sort-select-mobile">
+                        <option value="newest">新しい順</option>
+                        <option value="oldest">古い順</option>
+                        <option value="color">色別</option>
+                    </select>
+                </div>
+                <div class="action-grid">
+                    <button id="dark-mode-btn" class="btn-text"><i class="fas fa-moon"></i> テーマ</button>
+                    <button id="download-btn" class="btn-text"><i class="fas fa-download"></i> DL</button>
+                    <button id="bulk-delete-btn" class="btn-text"><i class="fas fa-trash-alt"></i> 整理</button>
+                    <button id="clear-bookmarks-btn" class="btn-text"><i class="fas fa-bookmark"></i> リセット</button>
+                </div>
+                <div class="volume-row">
+                    <i class="fas fa-volume-up"></i>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.12">
+                </div>
+            </div>
+        </header>
+
+        <!-- Bookshelf Tabs -->
+        <div class="bookshelf-tabs-container">
+            <div id="bookshelf-tabs" class="bookshelf-tabs">
+                <!-- Tabs will be generated here -->
+            </div>
+            <button id="add-shelf-btn" class="btn-add-shelf"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <!-- Bookshelf Container -->
+        <div class="bookshelf-container-mobile">
+            <div id="bookshelf-wrapper" class="bookshelf-wrapper-mobile">
+                <!-- Rows will be generated here -->
+            </div>
+
+            <!-- Navigation Overlays -->
+            <button id="prev-shelf-btn" class="shelf-nav-btn left"><i class="fas fa-chevron-left"></i></button>
+            <button id="next-shelf-btn" class="shelf-nav-btn right"><i class="fas fa-chevron-right"></i></button>
+
+            <!-- Floating Action Button -->
+            <button id="add-book-btn" class="fab-btn"><i class="fas fa-plus"></i></button>
+            
+            <!-- Random Book Button -->
+            <div id="random-book-btn" class="random-btn-mobile" title="今日の一冊">
+                <i class="fas fa-dice"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="rename-shelf-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-rename-shelf-modal" class="close-btn">&times;</span>
+            <h2>本棚の名前</h2>
+            <form id="rename-shelf-form">
+                <input type="text" id="shelf-name-input" required>
+                <button type="submit" class="btn full-width">保存</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-book-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" id="close-add-modal">&times;</span>
+            <h2 id="modal-title">本をしまう</h2>
+            <form id="add-book-form">
+                <input type="hidden" id="edit-book-id" value="">
+                <div class="form-group">
+                    <label for="file-upload" class="file-label-mobile"><i class="fas fa-file-upload"></i> ファイル選択</label>
+                    <input type="file" id="file-upload" accept=".txt" multiple>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="book-title" placeholder="タイトル" required>
+                </div>
+                <div class="form-group">
+                    <textarea id="book-content" rows="6" placeholder="内容を入力..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>表紙の色</label>
+                    <div class="color-picker-mobile">
+                        <input type="radio" name="book-color" value="#8B0000" id="color-red" checked><label for="color-red" style="background:#8B0000"></label>
+                        <input type="radio" name="book-color" value="#00008B" id="color-blue"><label for="color-blue" style="background:#00008B"></label>
+                        <input type="radio" name="book-color" value="#006400" id="color-green"><label for="color-green" style="background:#006400"></label>
+                        <input type="radio" name="book-color" value="#4B0082" id="color-purple"><label for="color-purple" style="background:#4B0082"></label>
+                        <input type="radio" name="book-color" value="#8B4513" id="color-brown"><label for="color-brown" style="background:#8B4513"></label>
+                        <input type="radio" name="book-color" value="#ffd1dc" id="color-sakura"><label for="color-sakura" style="background:#ffd1dc"></label>
+                        <input type="radio" name="book-color" value="#87cefa" id="color-sky"><label for="color-sky" style="background:#87cefa"></label>
+                    </div>
+                </div>
+                <button type="submit" class="btn full-width" id="save-book-btn">追加</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Read Book Modal (Mobile Optimized) -->
+    <div id="read-book-modal" class="modal hidden full-screen">
+        <div class="reader-container">
+            <header class="reader-header">
+                <button id="close-read-modal" class="btn-icon"><i class="fas fa-times"></i></button>
+                <h2 id="read-title"></h2>
+                <div class="reader-controls">
+                    <button id="font-family-btn" class="btn-icon"><i class="fas fa-font"></i></button>
+                    <button id="font-size-up-btn" class="btn-icon">A+</button>
+                    <button id="font-size-down-btn" class="btn-icon">A-</button>
+                </div>
+            </header>
+            <div class="reader-viewport" id="book-viewport">
+                <div class="reader-content vertical-text" id="read-content">
+                    <!-- Content -->
+                </div>
+            </div>
+            <footer class="reader-footer">
+                <button id="next-page-btn" class="page-nav-btn"><i class="fas fa-chevron-left"></i> 次へ</button>
+                <span id="page-info">1 / 1</span>
+                <button id="prev-page-btn" class="page-nav-btn">前へ <i class="fas fa-chevron-right"></i></button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Other Modals -->
+    <div id="delete-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-delete-modal" class="close-btn">&times;</span>
+            <h2>整理</h2>
+            <div id="delete-book-list" class="list-container"></div>
+            <button id="do-delete-btn" class="btn danger full-width">選択した本を削除</button>
+        </div>
+    </div>
+
+    <div id="download-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-download-modal" class="close-btn">&times;</span>
+            <h2>DL</h2>
+            <div id="download-book-list" class="list-container"></div>
+            <button id="do-download-btn" class="btn full-width">ダウンロード</button>
+        </div>
+    </div>
+
+    <audio id="bgm" loop></audio>
+    <audio id="flip-sound"><source src="page_flip.mp3" type="audio/mpeg"></audio>
+    <audio id="close-sound"><source src="book_close.mp3" type="audio/mpeg"></audio>
+
+    <div id="context-menu" class="context-menu hidden">
+        <div id="book-ctx-options">
+            <button id="ctx-edit-btn"><i class="fas fa-edit"></i> 編集</button>
+            <button id="ctx-remove-bookmark-btn"><i class="fas fa-bookmark"></i> しおり解除</button>
+            <button id="ctx-delete-btn"><i class="fas fa-trash"></i> 削除</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="script_mobile.js"></script>
+</body>
+</html>
