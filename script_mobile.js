@@ -183,8 +183,8 @@ function renderBookshelf() {
     while (currentBookIndex < displayBooks.length || currentBookIndex === 0) {
         const row = document.createElement('div');
         row.className = 'bookshelf-row';
-        // モバイルでは1段あたりの冊数を少なめに (3〜5冊)
-        const booksInThisRow = Math.floor(Math.random() * 3) + 3; 
+        // モバイルでは1段あたりの冊数を極限まで少なく (2〜3冊)
+        const booksInThisRow = Math.floor(Math.random() * 2) + 2; 
         const rowBooks = displayBooks.slice(currentBookIndex, currentBookIndex + booksInThisRow);
         
         rowBooks.forEach(book => row.appendChild(createBookSpine(book)));
@@ -210,7 +210,7 @@ function createBookSpine(book) {
     const spine = document.createElement('div');
     spine.className = `book-spine pattern-${book.pattern || 'antique'}`;
     spine.style.backgroundColor = book.color;
-    spine.style.height = `${180 + (book.id % 40)}px`;
+    spine.style.height = `${320 + (book.id % 50)}px`;
 
     const title = document.createElement('div');
     title.className = 'spine-text';
